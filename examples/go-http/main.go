@@ -113,7 +113,7 @@ func main() {
 	}
 	h := &host{sessions: map[string]record{}, jobs: map[string]int64{}, attempts: map[string]int{}}
 	mux := http.NewServeMux()
-	mux.Handle("POST /callback", &integration.CallbackHandler{Application: "demo", ServiceKeys: map[string]ed25519.PublicKey{"service1": readKey(*servicePub)}, KeyID: "app1", PrivateKey: ed25519.NewKeyFromSeed(readKey(*seedFile)), Sessions: h, Recovery: h, Revoker: h})
+	mux.Handle("POST /callback", &integration.CallbackHandler{Replay: integration.NewMemoryReplayGuard(), Application: "demo", ServiceKeys: map[string]ed25519.PublicKey{"service1": readKey(*servicePub)}, KeyID: "app1", PrivateKey: ed25519.NewKeyFromSeed(readKey(*seedFile)), Sessions: h, Recovery: h, Revoker: h})
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Cache-Control", "no-store")
 		w.Header().Set("Content-Type", "application/json")

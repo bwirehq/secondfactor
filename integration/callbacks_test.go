@@ -43,9 +43,9 @@ func (host) RevokeSessions(context.Context, sf.RevocationRequest) (sf.Revocation
 func TestSignedCallbacks(t *testing.T) {
 	pub, priv, _ := ed25519.GenerateKey(rand.Reader)
 	apub, apriv, _ := ed25519.GenerateKey(rand.Reader)
-	h := &CallbackHandler{Application: "test", ServiceKeys: map[string]ed25519.PublicKey{"service": pub}, PrivateKey: apriv, KeyID: "app", Sessions: host{}, Recovery: host{}, Revoker: host{}}
+	h := &CallbackHandler{Replay: NewMemoryReplayGuard(), Application: "test", ServiceKeys: map[string]ed25519.PublicKey{"service": pub}, PrivateKey: apriv, KeyID: "app", Sessions: host{}, Recovery: host{}, Revoker: host{}}
 	p, _ := json.Marshal(sf.Identity{Application: "test", Subject: "u", Session: "s", Source: "test"})
-	m := Message{1, "request1", "test", "session.verify", time.Now().Unix(), p}
+	m := Message{1, "request-unique-00000001", "test", "session.verify", time.Now().Unix(), p}
 	b, _ := json.Marshal(m)
 	req := httptest.NewRequest("POST", "/callback", bytes.NewReader(b))
 	req.Header.Set("X-SecondFactor-Key-ID", "service")
@@ -59,4 +59,14 @@ func TestSignedCallbacks(t *testing.T) {
 	if !ed25519.Verify(apub, w.Body.Bytes(), sig) {
 		t.Fatal("response not authenticated")
 	}
+	// A signed request is still single-use; no callback operation can be replayed.
+	w2 := httptest.NewRecorder()
+	h.ServeHTTP(w2, httptest.NewRequest("POST", "/callback", bytes.NewReader(b)))
+	if w2.Code == http.StatusOK { t.Fatal("replayed callback accepted without headers") }
+	replay := httptest.NewRequest("POST", "/callback", bytes.NewReader(b))
+	replay.Header.Set("X-SecondFactor-Key-ID", "service")
+	replay.Header.Set("X-SecondFactor-Signature", base64.RawURLEncoding.EncodeToString(ed25519.Sign(priv, b)))
+	w3 := httptest.NewRecorder()
+	h.ServeHTTP(w3, replay)
+	if w3.Code != http.StatusForbidden { t.Fatalf("signed callback replay status %d", w3.Code) }
 }

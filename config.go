@@ -4,6 +4,7 @@ package secondfactor
 
 import (
 	"context"
+	"bytes"
 	"crypto/ed25519"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"time"
@@ -60,8 +61,10 @@ type SessionRevoker interface {
 	RevokeSessions(context.Context, RevocationRequest) (Revocation, error)
 }
 type Application struct {
-	Issuer string
-	Keys   map[string]ed25519.PublicKey
+	Issuer    string
+	Keys      map[string]ed25519.PublicKey
+	// EventKeys authenticate privileged outbox workers only, not end-user API calls.
+	EventKeys map[string]ed25519.PublicKey
 }
 type Limits struct {
 	Account, Session, Source, Application, Sensitive, Failures int
@@ -115,12 +118,23 @@ func New(c Config) (*Service, error) {
 		if !validID(id) || len(a.Issuer) < 1 || len(a.Issuer) > 128 {
 			return nil, invalid("application")
 		}
-		b := Application{Issuer: a.Issuer, Keys: map[string]ed25519.PublicKey{}}
+		b := Application{Issuer: a.Issuer, Keys: map[string]ed25519.PublicKey{}, EventKeys: map[string]ed25519.PublicKey{}}
 		for kid, k := range a.Keys {
 			if !validID(kid) || len(k) != 32 {
 				return nil, invalid("signing key")
 			}
 			b.Keys[kid] = append(ed25519.PublicKey(nil), k...)
+		}
+		for kid, k := range a.EventKeys {
+			if !validID(kid) || len(k) != ed25519.PublicKeySize {
+				return nil, invalid("event signing key")
+			}
+			for _, regular := range b.Keys {
+				if bytes.Equal(regular, k) {
+					return nil, invalid("event signing key must be distinct")
+				}
+			}
+			b.EventKeys[kid] = append(ed25519.PublicKey(nil), k...)
 		}
 		s.apps[id] = b
 	}

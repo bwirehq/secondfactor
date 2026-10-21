@@ -27,6 +27,7 @@ import (
 type appConfig struct {
 	Issuer       string            `json:"issuer"`
 	SigningKeys  map[string]string `json:"signing_keys"`
+	EventSigningKeys map[string]string `json:"event_signing_keys"`
 	CallbackURL  string            `json:"callback_url"`
 	AllowedCIDRs []string          `json:"allowed_cidrs"`
 	CAFile       string            `json:"ca_file"`
@@ -87,7 +88,7 @@ func keygen(dir string) error {
 	if e := os.Mkdir(dir, 0700); e != nil {
 		return e
 	}
-	for _, name := range []string{"encryption.key", "service.seed", "application.seed"} {
+	for _, name := range []string{"encryption.key", "service.seed", "application.seed", "event.seed"} {
 		b := make([]byte, 32)
 		if _, e := rand.Read(b); e != nil {
 			return e
@@ -177,6 +178,14 @@ func run() error {
 		if len(public) == 0 {
 			return errors.New("application signing keys required")
 		}
+		eventKeys := map[string]ed25519.PublicKey{}
+		for kid, path := range a.EventSigningKeys {
+			k, e := decoded(path, 32, false)
+			if e != nil {
+				return e
+			}
+			eventKeys[kid] = k
+		}
 		d := integration.Destination{URL: a.CallbackURL, Keys: public}
 		for _, s := range a.AllowedCIDRs {
 			p, e := netip.ParsePrefix(s)
@@ -199,7 +208,7 @@ func run() error {
 			return e
 		}
 		callbacks.Applications[id] = d
-		apps[id] = sf.Application{Issuer: a.Issuer, Keys: public}
+		apps[id] = sf.Application{Issuer: a.Issuer, Keys: public, EventKeys: eventKeys}
 	}
 	service, e := sf.New(sf.Config{Pool: pool, Applications: apps, ActiveKeyID: c.ActiveKeyID, Keys: keys, Sessions: callbacks, Recovery: callbacks, Revoker: callbacks})
 	if e != nil {

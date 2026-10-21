@@ -17,6 +17,7 @@ import (
 	"net/http"
 	"net/netip"
 	"net/url"
+	"sync"
 	"time"
 )
 
@@ -172,7 +173,38 @@ func (c *Callbacks) RevokeSessions(ctx context.Context, r sf.RevocationRequest) 
 
 // CallbackHandler authenticates the service and signs correlated responses. Business
 // implementations must make revocation durable and idempotent using JobID.
+// CallbackReplayGuard must atomically consume callback IDs across all application replicas.
+// Use durable shared storage in production; duplicate IDs must return false.
+type CallbackReplayGuard interface {
+	Consume(context.Context, string, string, time.Time) (bool, error)
+}
+
+// MemoryReplayGuard is ONLY for local development and tests. It is not
+// safe for distributed or restarting production applications.
+type MemoryReplayGuard struct {
+	mu sync.Mutex
+	used map[string]time.Time
+}
+
+func NewMemoryReplayGuard() *MemoryReplayGuard {
+	return &MemoryReplayGuard{used: make(map[string]time.Time)}
+}
+
+func (g *MemoryReplayGuard) Consume(_ context.Context, app, id string, expiry time.Time) (bool, error) {
+	g.mu.Lock()
+	defer g.mu.Unlock()
+	now := time.Now()
+	for k, until := range g.used {
+		if !until.After(now) { delete(g.used, k) }
+	}
+	key := app + ":" + id
+	if _, exists := g.used[key]; exists { return false, nil }
+	g.used[key] = expiry
+	return true, nil
+}
+
 type CallbackHandler struct {
+	Replay      CallbackReplayGuard
 	Application string
 	ServiceKeys map[string]ed25519.PublicKey
 	KeyID       string
@@ -197,12 +229,27 @@ func (h *CallbackHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 	var m Message
 	now := time.Now().Unix()
-	if sf.StrictJSON(raw, &m) != nil || m.Version != 1 || m.Application != h.Application || m.ID == "" || m.IssuedAt < now-5 || m.IssuedAt > now+5 {
+	if sf.StrictJSON(raw, &m) != nil || m.Version != 1 || m.Application != h.Application || len(m.ID) < 16 || len(m.ID) > 128 || m.IssuedAt < now-5 || m.IssuedAt > now+5 {
 		http.Error(w, "denied", 403)
 		return
 	}
 	ctx, cancel := context.WithTimeout(r.Context(), 2*time.Second)
 	defer cancel()
+	// Never execute a signed administrative callback twice within its valid window.
+	// Missing or unavailable replay storage must fail closed.
+	if h.Replay == nil {
+		http.Error(w, "unavailable", http.StatusServiceUnavailable)
+		return
+	}
+	fresh, replayErr := h.Replay.Consume(ctx, m.Application, m.ID, time.Unix(m.IssuedAt+10, 0))
+	if replayErr != nil {
+		http.Error(w, "unavailable", http.StatusServiceUnavailable)
+		return
+	}
+	if !fresh {
+		http.Error(w, "denied", http.StatusForbidden)
+		return
+	}
 	var out any
 	switch m.Operation {
 	case "session.verify":

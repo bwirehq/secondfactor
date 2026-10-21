@@ -114,7 +114,8 @@ func database(t *testing.T, maxConns int32) *fixture {
 	h.login("owner", "owner-session")
 	h.login("operator", "operator-session")
 	key := ed25519.NewKeyFromSeed(bytes.Repeat([]byte{7}, 32)).Public().(ed25519.PublicKey)
-	s, e := New(Config{Pool: p, Applications: map[string]Application{"test": {Issuer: "Example", Keys: map[string]ed25519.PublicKey{"test": key}}, "other": {Issuer: "Other", Keys: map[string]ed25519.PublicKey{"test": key}}}, ActiveKeyID: "one", Keys: map[string][]byte{"one": bytes.Repeat([]byte{1}, 32)}, Sessions: h, Recovery: h, Revoker: h})
+	eventKey := ed25519.NewKeyFromSeed(bytes.Repeat([]byte{8}, 32)).Public().(ed25519.PublicKey)
+	s, e := New(Config{Pool: p, Applications: map[string]Application{"test": {Issuer: "Example", Keys: map[string]ed25519.PublicKey{"test": key}, EventKeys: map[string]ed25519.PublicKey{"worker": eventKey}}, "other": {Issuer: "Other", Keys: map[string]ed25519.PublicKey{"test": key}}}, ActiveKeyID: "one", Keys: map[string][]byte{"one": bytes.Repeat([]byte{1}, 32)}, Sessions: h, Recovery: h, Revoker: h})
 	if e != nil {
 		t.Fatal(e)
 	}
@@ -640,5 +641,33 @@ func TestDatabaseDeniedRecoveryAuthorizationIsLimited(t *testing.T) {
 	}
 	if f.h.authorizations != 2 {
 		t.Fatal("excess policy callbacks", f.h.authorizations)
+	}
+}
+
+// TestDatabaseEventSigningKeyIsolation prevents hijacking privileged outbox delivery
+// through an ordinary authenticated application's end-user signing credentials.
+func TestDatabaseEventSigningKeyIsolation(t *testing.T) {
+	f := database(t, 4)
+	now := time.Now().Unix()
+	claims := AssertionClaims{IdempotencyHash: BodyHash(nil), Version: 1, Issuer: "test",
+		Audience: "audience", Subject: "owner", Session: "owner-session", Source: "worker",
+		IssuedAt: now, ExpiresAt: now + 60, Method: "POST",
+		Path: "/v1/events/claim", BodyHash: BodyHash([]byte("{}"))}
+	for _, tc := range []struct {name string; seed byte; path string; authorized bool}{
+		{"user-key-to-events", 7, "/v1/events/claim", false},
+		{"worker-key-to-events", 8, "/v1/events/claim", true},
+		{"worker-key-to-user-endpoint", 8, "/v1/factors/status", false},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			c := claims
+			c.Path = tc.path
+			c.ID = tc.name
+			a, e := SignAssertion(ed25519.NewKeyFromSeed(bytes.Repeat([]byte{tc.seed}, 32)), map[byte]string{7:"test",8:"worker"}[tc.seed], c)
+			if e != nil { t.Fatal(e) }
+			req := httptest.NewRequest("POST", c.Path, strings.NewReader("{}"))
+			req.Header.Set("Authorization", "Bearer "+a)
+			_, e = f.s.AuthenticateRequest(f.ctx, req, []byte("{}"), "audience")
+			if (e == nil) != tc.authorized { t.Fatalf("authorized=%v error=%v", tc.authorized, e) }
+		})
 	}
 }
