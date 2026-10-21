@@ -17,3 +17,8 @@ Source must come from trusted middleware. Trust forwarded IP headers only from a
 Database runtime privileges: connect, schema usage, and SELECT/INSERT/UPDATE/DELETE on SecondFactor tables only. Migration credentials additionally need schema/table/index creation. Do not grant the runtime role superuser or access to unrelated schemas. Treat event claims as privileged application-backend access; never expose them as an end-user endpoint.
 
 Run cleanup explicitly on a controlled schedule. Expired proofs, assertion replay rows, enrollment, idempotency, and rate-limit records are removed; unfinished recovery workflows remain blocked and retained. Events are retained for at least 90 days and at least 30 days after acknowledgment. Back up recovery audit data according to your policy.
+
+
+## Worker signing keys and replay safety
+
+Set `event_signing_keys` in each application configuration to map **dedicated worker key IDs** to public key files. Worker keys must differ from `signing_keys` and cannot access normal MFA endpoints. Without worker keys, the event claim/ack routes are unavailable. Use a separate backend-only SDK client for outbox delivery. Receiving applications must configure `integration.CallbackHandler.Replay` with a durable shared replay store, such as `integration.PostgresReplayGuard`, after explicitly running `MigrateCallbackReplays`. See [callback replay](callback-replay.md).
