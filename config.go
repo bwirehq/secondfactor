@@ -3,8 +3,8 @@
 package secondfactor
 
 import (
-	"context"
 	"bytes"
+	"context"
 	"crypto/ed25519"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"time"
@@ -61,8 +61,8 @@ type SessionRevoker interface {
 	RevokeSessions(context.Context, RevocationRequest) (Revocation, error)
 }
 type Application struct {
-	Issuer    string
-	Keys      map[string]ed25519.PublicKey
+	Issuer string
+	Keys   map[string]ed25519.PublicKey
 	// EventKeys authenticate privileged outbox workers only, not end-user API calls.
 	EventKeys map[string]ed25519.PublicKey
 }
