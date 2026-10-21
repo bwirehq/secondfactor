@@ -182,7 +182,7 @@ type CallbackReplayGuard interface {
 // MemoryReplayGuard is ONLY for local development and tests. It is not
 // safe for distributed or restarting production applications.
 type MemoryReplayGuard struct {
-	mu sync.Mutex
+	mu   sync.Mutex
 	used map[string]time.Time
 }
 
@@ -195,10 +195,14 @@ func (g *MemoryReplayGuard) Consume(_ context.Context, app, id string, expiry ti
 	defer g.mu.Unlock()
 	now := time.Now()
 	for k, until := range g.used {
-		if !until.After(now) { delete(g.used, k) }
+		if !until.After(now) {
+			delete(g.used, k)
+		}
 	}
 	key := app + ":" + id
-	if _, exists := g.used[key]; exists { return false, nil }
+	if _, exists := g.used[key]; exists {
+		return false, nil
+	}
 	g.used[key] = expiry
 	return true, nil
 }
