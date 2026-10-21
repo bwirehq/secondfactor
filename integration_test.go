@@ -680,3 +680,26 @@ func TestDatabaseEventSigningKeyIsolation(t *testing.T) {
 		})
 	}
 }
+
+func TestDatabaseRejectsSharedEventSigningKey(t *testing.T) {
+	f := database(t, 4)
+	regular := f.s.apps["test"].Keys["test"]
+	_, err := New(Config{
+		Pool: f.p,
+		Applications: map[string]Application{
+			"test": {
+				Issuer: "Example",
+				Keys: map[string]ed25519.PublicKey{"normal": regular},
+				EventKeys: map[string]ed25519.PublicKey{"events": regular},
+			},
+		},
+		ActiveKeyID: "one",
+		Keys: map[string][]byte{"one": bytes.Repeat([]byte{1}, 32)},
+		Sessions: f.h,
+		Recovery: f.h,
+		Revoker: f.h,
+	})
+	if err == nil {
+		t.Fatal("shared ordinary and event signing material accepted")
+	}
+}
