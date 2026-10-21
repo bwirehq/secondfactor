@@ -42,3 +42,8 @@ curl --fail-with-body --cacert service-ca.pem \
 ```
 
 This illustrative domain is a placeholder. Never send secrets in URLs. See [OpenAPI](openapi.yaml), [assertion protocol](assertions.md), and [recovery](recovery.md).
+
+
+### Privileged event endpoints
+
+`POST /v1/events/claim` and `POST /v1/events/ack` require `event_signing_keys`, not ordinary application assertion signing keys. Only trusted background workers should possess these credentials; they must never be accessible through browser routes. See [callback replay and worker isolation](callback-replay.md).
