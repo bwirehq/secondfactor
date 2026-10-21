@@ -23,3 +23,6 @@ Each verification consumes database-backed admission budgets before the factor t
 Callbacks run outside factor transactions. Assisted recovery uses persisted jobs and an idempotent revocation handshake rather than a distributed transaction. Outbox events and state changes commit together.
 
 The Go HTTP example uses intentionally ephemeral in-memory primary sessions. Production applications must provide durable, authoritative session and revocation implementations.
+
+
+Outbox event claiming and acknowledgment use a **separate signing-key class** from end-user MFA operations, with no implicit privilege escalation. Receiving application callback handlers must atomically reject signed request replay using durable application-owned storage, such as `integration.PostgresReplayGuard`. See [callback security](callback-replay.md).
