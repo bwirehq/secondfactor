@@ -41,3 +41,8 @@ Run `cargo test --manifest-path sdk/rust/Cargo.toml --locked` and `cargo run --m
 ## Other languages
 
 Implement the assertion protocol in `docs/assertions.md` and call the versioned endpoints in OpenAPI. Do not reimplement TOTP, recovery, or proof verification. Have the service validate opaque proofs online. Public test vectors are provided for protocol interoperability.
+
+
+## Callback replay and background delivery
+
+In production, configure `integration.CallbackHandler.Replay` using a persistent atomic implementation shared by all application instances. The bundled `PostgresReplayGuard` is available with explicit `MigrateCallbackReplays` setup; the in-memory guard is only for local examples. Provide a distinct worker SDK client using the application's configured `event_signing_keys` to claim/acknowledge outbox events. Ordinary application signing credentials no longer authorize those routes. The TypeScript and Rust SDKs are source-only; independently verify registry publishers before installing similarly named npm/Cargo packages. See [callback security](callback-replay.md).
