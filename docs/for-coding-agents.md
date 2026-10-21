@@ -13,3 +13,8 @@
 11. Test cross-session/tenant rejection, code replay, callback failures, recovery blocking, key rotation, and concurrent mutations.
 
 Check actual exports and OpenAPI before writing integration code. Do not invent SDK publications, bypass failed callbacks, cache successful session verification, or treat recovery grants as access proofs. Handle `idempotent_secret_consumed` explicitly: the original mutation completed, but its one-time secret will not be returned again.
+
+
+## Mandatory replay and privileged worker integration
+
+When wiring `integration.CallbackHandler`, inject a `CallbackReplayGuard` backed by durable shared storage (for example `integration.PostgresReplayGuard`) so a captured signed callback cannot execute twice. Run `integration.MigrateCallbackReplays` explicitly on the consuming application's database. The in-memory guard is only for demos. For event claims/acknowledgments, configure a **different** application signing key under `event_signing_keys` and a dedicated server-side worker SDK client. Ordinary user-context signing keys cannot claim recovery invitations. See [callback security](callback-replay.md).

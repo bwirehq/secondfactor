@@ -1700,7 +1700,7 @@
         "summary": "claimEvents",
         "security": [
           {
-            "ApplicationAssertion": []
+            "EventWorkerAssertion": []
           }
         ],
         "responses": {
@@ -1789,7 +1789,8 @@
               }
             }
           }
-        }
+        },
+        "description": "Requires a distinct, registered worker key; user-context signing keys are not authorized."
       }
     },
     "/v1/events/ack": {
@@ -1798,7 +1799,7 @@
         "summary": "ackEvent",
         "security": [
           {
-            "ApplicationAssertion": []
+            "EventWorkerAssertion": []
           }
         ],
         "responses": {
@@ -1895,7 +1896,8 @@
               }
             }
           }
-        }
+        },
+        "description": "Requires a distinct, registered worker key; user-context signing keys are not authorized."
       }
     },
     "/v1/health/ready": {
@@ -1989,6 +1991,12 @@
         "scheme": "bearer",
         "bearerFormat": "Ed25519 JWS",
         "description": "sf-assertion+jwt; required audience, identity, method/path/body/idempotency binding."
+      },
+      "EventWorkerAssertion": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "Ed25519-signed worker assertion",
+        "description": "Privileged worker-only signing keys registered in event_signing_keys. Ordinary application keys are rejected."
       }
     },
     "schemas": {

@@ -148,7 +148,13 @@ func (s *Service) AuthenticateRequest(ctx context.Context, r *http.Request, body
 	if !ok {
 		return empty, ErrDenied
 	}
-	key := a.Keys[h.KeyID]
+	// Privileged event delivery requires a separate application worker credential.
+	// A user-context signing key can never claim tenant-wide recovery invitations.
+	keys := a.Keys
+	if r.URL.Path == "/v1/events/claim" || r.URL.Path == "/v1/events/ack" {
+		keys = a.EventKeys
+	}
+	key := keys[h.KeyID]
 	sig, e := decode(parts[2])
 	if e != nil || len(key) != ed25519.PublicKeySize || !ed25519.Verify(key, []byte(parts[0]+"."+parts[1]), sig) {
 		return empty, ErrDenied

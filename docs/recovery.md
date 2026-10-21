@@ -23,3 +23,8 @@ Operations: `session.verify`, `recovery.authorize`, and `sessions.revoke`. The p
 Responses are signed using the application's registered key and contain the original ID/application/operation plus the typed result. The service checks this correlation. Revocation is idempotent by persisted job ID, independent of transport-request IDs. Policy authorizers must also handle retries safely. Protect callback endpoints with private networking or mTLS where possible.
 
 The demo authorizer denies assisted recovery. Integrators must supply their own policy; the example does not pretend that mock login proves identity for account recovery.
+
+
+## Replay-resistant callbacks
+
+Receiving applications must atomically consume signed callback request IDs before performing recovery authorization or session revocation. Configure `CallbackHandler.Replay` with shared, durable storage. `PostgresReplayGuard` is provided for consuming applications and fails closed when its database is unavailable. Recovery invitation outbox claims require separate `event_signing_keys` not ordinary user-context assertions. See [callback security](callback-replay.md).
