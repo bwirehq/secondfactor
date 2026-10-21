@@ -25,12 +25,12 @@ import (
 )
 
 type appConfig struct {
-	Issuer       string            `json:"issuer"`
-	SigningKeys  map[string]string `json:"signing_keys"`
+	Issuer           string            `json:"issuer"`
+	SigningKeys      map[string]string `json:"signing_keys"`
 	EventSigningKeys map[string]string `json:"event_signing_keys"`
-	CallbackURL  string            `json:"callback_url"`
-	AllowedCIDRs []string          `json:"allowed_cidrs"`
-	CAFile       string            `json:"ca_file"`
+	CallbackURL      string            `json:"callback_url"`
+	AllowedCIDRs     []string          `json:"allowed_cidrs"`
+	CAFile           string            `json:"ca_file"`
 }
 type config struct {
 	DatabaseURLFile string               `json:"database_url_file"`
