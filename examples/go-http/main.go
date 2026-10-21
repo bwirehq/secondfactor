@@ -61,6 +61,19 @@ func (h *host) RevokeSessions(ctx context.Context, r sf.RevocationRequest) (sf.R
 	h.jobs[r.JobID] = h.generation
 	return sf.Revocation{Confirmed: true, Generation: h.generation}, nil
 }
+
+// updateProofs must never recreate a session deleted by concurrent logout/revocation.
+func (h *host) updateProofs(id string, expected sf.Session, proofs sf.Verification) bool {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	current, ok := h.sessions[id]
+	if !ok || !current.Session.Active || !current.Session.ExpiresAt.After(time.Now()) || current.Session.Subject != expected.Subject || current.Session.ID != expected.ID || current.Session.Generation != expected.Generation || !current.Session.AuthenticatedAt.Equal(expected.AuthenticatedAt) {
+		return false
+	}
+	current.Proofs = proofs
+	h.sessions[id] = current
+	return true
+}
 func readKey(path string) []byte {
 	raw, e := os.ReadFile(path)
 	if e != nil {
@@ -217,10 +230,10 @@ func main() {
 			return
 		}
 		if proofs != nil {
-			h.mu.Lock()
-			rec.Proofs = *proofs
-			h.sessions[cookie.Value] = rec
-			h.mu.Unlock()
+			if !h.updateProofs(cookie.Value, rec.Session, *proofs) {
+				http.Error(w, "primary session ended", 401)
+				return
+			}
 		}
 		_ = json.NewEncoder(w).Encode(out)
 	})

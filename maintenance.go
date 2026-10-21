@@ -109,14 +109,14 @@ func (s *Service) Cleanup(ctx context.Context) error {
 	}
 	defer rollback(tx)
 	for _, q := range []string{
-		`DELETE FROM secondfactor_assertion_replays WHERE expires_at<clock_timestamp()`,
-		`DELETE FROM secondfactor_idempotency WHERE expires_at<clock_timestamp()`,
-		`DELETE FROM secondfactor_rate_limits WHERE expires_at<clock_timestamp()`,
-		`DELETE FROM secondfactor_proofs WHERE expires_at<clock_timestamp()`,
-		`DELETE FROM secondfactor_enrollments WHERE expires_at<clock_timestamp()`,
-		`DELETE FROM secondfactor_recovery_grants WHERE expires_at<clock_timestamp()`,
-		`UPDATE secondfactor_events SET encrypted_payload=NULL WHERE kind='recovery_invitation' AND created_at<clock_timestamp()-interval '10 minutes'`,
-		`DELETE FROM secondfactor_events e WHERE e.created_at<clock_timestamp()-interval '90 days' AND e.acknowledged_at<clock_timestamp()-interval '30 days' AND NOT EXISTS(SELECT 1 FROM secondfactor_assisted_recoveries r WHERE r.app_id=e.app_id AND r.subject=e.subject AND r.state NOT IN('completed','cancelled'))`,
+		`DELETE FROM secondfactor_assertion_replays WHERE ctid IN (SELECT ctid FROM secondfactor_assertion_replays WHERE expires_at<clock_timestamp() LIMIT 1000)`,
+		`DELETE FROM secondfactor_idempotency WHERE ctid IN (SELECT ctid FROM secondfactor_idempotency WHERE expires_at<clock_timestamp() LIMIT 1000)`,
+		`DELETE FROM secondfactor_rate_limits WHERE ctid IN (SELECT ctid FROM secondfactor_rate_limits WHERE expires_at<clock_timestamp() LIMIT 1000)`,
+		`DELETE FROM secondfactor_proofs WHERE ctid IN (SELECT ctid FROM secondfactor_proofs WHERE expires_at<clock_timestamp() LIMIT 1000)`,
+		`DELETE FROM secondfactor_enrollments WHERE ctid IN (SELECT ctid FROM secondfactor_enrollments WHERE expires_at<clock_timestamp() LIMIT 1000)`,
+		`DELETE FROM secondfactor_recovery_grants WHERE ctid IN (SELECT ctid FROM secondfactor_recovery_grants WHERE expires_at<clock_timestamp() LIMIT 1000)`,
+		`UPDATE secondfactor_events SET encrypted_payload=NULL WHERE ctid IN (SELECT ctid FROM secondfactor_events WHERE encrypted_payload IS NOT NULL AND kind='recovery_invitation' AND created_at<clock_timestamp()-interval '10 minutes' LIMIT 1000)`,
+		`DELETE FROM secondfactor_events WHERE ctid IN (SELECT e.ctid FROM secondfactor_events e WHERE e.created_at<clock_timestamp()-interval '90 days' AND e.acknowledged_at<clock_timestamp()-interval '30 days' AND NOT EXISTS(SELECT 1 FROM secondfactor_assisted_recoveries r WHERE r.app_id=e.app_id AND r.subject=e.subject AND r.state NOT IN('completed','cancelled')) LIMIT 1000)`,
 	} {
 		if _, e = tx.Exec(ctx, q); e != nil {
 			return e

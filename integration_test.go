@@ -23,6 +23,7 @@ type testHost struct {
 	generations                   map[string]int64
 	jobs                          map[string]int64
 	deny, failRevoke, failSession bool
+	authorizations                int
 }
 
 func (h *testHost) login(subject, id string) Session {
@@ -43,6 +44,7 @@ func (h *testHost) VerifySession(ctx context.Context, i Identity) (Session, erro
 func (h *testHost) AuthorizeRecovery(ctx context.Context, r RecoveryRequest) (RecoveryAuthorization, error) {
 	h.mu.Lock()
 	defer h.mu.Unlock()
+	h.authorizations++
 	return RecoveryAuthorization{!h.deny && r.Actor.Subject == "operator" && r.Actor.Subject != r.Target && r.Action != "", "policy-verified", h.generations[r.Target]}, nil
 }
 func (h *testHost) RevokeSessions(ctx context.Context, r RevocationRequest) (Revocation, error) {
@@ -615,5 +617,28 @@ func TestDatabaseEventLeases(t *testing.T) {
 	}
 	if f.s.AckEvent(f.ctx, "test", event.ID, event.Lease) == nil {
 		t.Fatal("replayed lease")
+	}
+}
+
+func TestDatabaseDeniedRecoveryAuthorizationIsLimited(t *testing.T) {
+	f := database(t, 4)
+	f.h.deny = true
+	f.s.limits.Sensitive = 2
+	in := f.in()
+	in.Identity = Identity{"test", "operator", "operator-session", "admin-source"}
+	in.Target = "owner"
+	in.JobID = "denied-job"
+	in.Reason = "Independent identity verification"
+	in.Evidence = "ticket"
+	for n := 0; n < 2; n++ {
+		if _, e := f.s.StartAssistedRecovery(f.ctx, in); !errors.Is(e, ErrDenied) {
+			t.Fatal(e)
+		}
+	}
+	if _, e := f.s.StartAssistedRecovery(f.ctx, in); e == nil || e.(*Error).Code != "rate_limited" {
+		t.Fatal("denied recovery not limited", e)
+	}
+	if f.h.authorizations != 2 {
+		t.Fatal("excess policy callbacks", f.h.authorizations)
 	}
 }

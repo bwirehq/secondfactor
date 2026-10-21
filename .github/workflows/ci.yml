@@ -67,7 +67,8 @@ jobs:
       - name: Compile isolated Go example
         run: |
           go work init . ./examples/go-http
-          go build ./examples/go-http
+          go build -o /tmp/secondfactor-demo ./examples/go-http
+          go test -race ./examples/go-http
           rm -f go.work go.work.sum
       - name: OpenAPI validation
         run: python3 -m pip install -r scripts/requirements.txt && python3 scripts/validate-openapi.py

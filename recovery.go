@@ -31,14 +31,14 @@ func (s *Service) authorize(ctx context.Context, in Mutation, action string) (Re
 	return v, nil
 }
 func (s *Service) StartAssistedRecovery(ctx context.Context, in Mutation) (RecoveryJob, error) {
-	a, e := s.authorize(ctx, in, "start")
-	if e != nil {
-		return RecoveryJob{}, e
-	}
 	if len(in.IdempotencyKey) < 16 || len(in.IdempotencyKey) > 128 {
 		return RecoveryJob{}, invalid("idempotency key")
 	}
-	if e = s.admission(ctx, in.Identity, "recovery_start"); e != nil {
+	if e := s.admission(ctx, in.Identity, "recovery_start"); e != nil {
+		return RecoveryJob{}, e
+	}
+	a, e := s.authorize(ctx, in, "start")
+	if e != nil {
 		return RecoveryJob{}, e
 	}
 	actor := in.Identity
@@ -85,10 +85,10 @@ func (s *Service) StartAssistedRecovery(ctx context.Context, in Mutation) (Recov
 
 // ResumeAssistedRecovery retries the same independently authorized, durable revocation job.
 func (s *Service) ResumeAssistedRecovery(ctx context.Context, in Mutation) (RecoveryJob, error) {
-	if _, e := s.authorize(ctx, in, "resume"); e != nil {
+	if e := s.admission(ctx, in.Identity, "recovery_resume"); e != nil {
 		return RecoveryJob{}, e
 	}
-	if e := s.admission(ctx, in.Identity, "recovery_resume"); e != nil {
+	if _, e := s.authorize(ctx, in, "resume"); e != nil {
 		return RecoveryJob{}, e
 	}
 	var pre int64
@@ -175,13 +175,13 @@ func (s *Service) CompleteAssistedRecovery(ctx context.Context, in Mutation) (Pr
 // CancelAssistedRecovery requires independent authorization, invalidates all grants,
 // and preserves the blocked factor. A separately authorized restart is required.
 func (s *Service) CancelAssistedRecovery(ctx context.Context, in Mutation) error {
-	if _, e := s.authorize(ctx, in, "cancel"); e != nil {
-		return e
-	}
 	if len(in.IdempotencyKey) < 16 || len(in.IdempotencyKey) > 128 {
 		return ErrInvalidInput
 	}
 	if e := s.admission(ctx, in.Identity, "recovery_cancel"); e != nil {
+		return e
+	}
+	if _, e := s.authorize(ctx, in, "cancel"); e != nil {
 		return e
 	}
 	actor := in.Identity.Subject
