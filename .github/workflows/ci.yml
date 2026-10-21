@@ -39,8 +39,6 @@ jobs:
           node-version: "24"
       - name: Verify Go dependency manifest
         run: go mod tidy && git diff --exit-code -- go.mod go.sum
-      - name: Diagnostic Go formatting
-        run: gofmt -d $(git ls-files '*.go')
       - name: Go formatting
         run: test -z "$(gofmt -l $(git ls-files '*.go'))"
       - name: TypeScript SDK
