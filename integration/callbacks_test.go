@@ -62,11 +62,15 @@ func TestSignedCallbacks(t *testing.T) {
 	// A signed request is still single-use; no callback operation can be replayed.
 	w2 := httptest.NewRecorder()
 	h.ServeHTTP(w2, httptest.NewRequest("POST", "/callback", bytes.NewReader(b)))
-	if w2.Code == http.StatusOK { t.Fatal("replayed callback accepted without headers") }
+	if w2.Code == http.StatusOK {
+		t.Fatal("replayed callback accepted without headers")
+	}
 	replay := httptest.NewRequest("POST", "/callback", bytes.NewReader(b))
 	replay.Header.Set("X-SecondFactor-Key-ID", "service")
 	replay.Header.Set("X-SecondFactor-Signature", base64.RawURLEncoding.EncodeToString(ed25519.Sign(priv, b)))
 	w3 := httptest.NewRecorder()
 	h.ServeHTTP(w3, replay)
-	if w3.Code != http.StatusForbidden { t.Fatalf("signed callback replay status %d", w3.Code) }
+	if w3.Code != http.StatusForbidden {
+		t.Fatalf("signed callback replay status %d", w3.Code)
+	}
 }
