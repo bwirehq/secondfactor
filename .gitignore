@@ -1,0 +1,11 @@
+secrets/
+.env
+node_modules/
+dist/
+target/
+coverage*
+*.test
+
+go.work*
+config.local.json
+config.compose.json

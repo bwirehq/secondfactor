@@ -1,0 +1,85 @@
+name: required-ci
+on:
+  push:
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_PASSWORD: isolated-ci-test-only
+          POSTGRES_DB: secondfactor_test
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 20
+    env:
+      SECONDFACTOR_TEST_DATABASE_URL: postgres://postgres:isolated-ci-test-only@127.0.0.1:5432/secondfactor_test?sslmode=disable
+      SF_REQUIRE_DB: "1"
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5
+        with:
+          go-version-file: go.mod
+          cache: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: "24"
+      - name: Verify Go dependency manifest
+        run: go mod tidy && git diff --exit-code -- go.mod go.sum
+      - name: Go formatting
+        run: test -z "$(gofmt -l $(git ls-files '*.go'))"
+      - name: TypeScript SDK
+        working-directory: sdk/typescript
+        run: npm ci --ignore-scripts && npm run build && npm test && npm run format:check && npm audit --audit-level=moderate
+      - name: NestJS example
+        working-directory: examples/nestjs
+        run: npm ci --ignore-scripts && npm run build && npm audit --audit-level=moderate
+      - name: Rust toolchain
+        run: rustup update stable && rustup default stable && rustup component add rustfmt clippy
+      - name: Rust SDK
+        working-directory: sdk/rust
+        run: cargo fmt --check && cargo test --locked && cargo clippy --locked --all-targets -- -D warnings
+      - name: Rust example
+        working-directory: examples/rust
+        run: cargo fmt --check && cargo test --locked && cargo clippy --locked --all-targets -- -D warnings
+      - name: Rust dependency advisories
+        run: cargo install cargo-audit --locked --version 0.22.0 && cargo audit --file sdk/rust/Cargo.lock && cargo audit --file examples/rust/Cargo.lock
+      - name: Go tests and PostgreSQL integration
+        run: go test -count=1 ./...
+      - name: Race detection and live SDK interoperability
+        env:
+          SF_TEST_CLIENTS: "1"
+        run: go test -race -count=1 ./...
+      - name: Go static checks
+        run: go vet ./...
+      - name: Go vulnerability checks
+        run: go run golang.org/x/vuln/cmd/govulncheck@v1.1.4 ./...
+      - name: Compile isolated Go example
+        run: |
+          go work init . ./examples/go-http
+          go build ./examples/go-http
+          rm -f go.work go.work.sum
+      - name: OpenAPI validation
+        run: python3 -m pip install -r scripts/requirements.txt && python3 scripts/validate-openapi.py
+      - name: Secret scanning and release hygiene
+        run: |
+          go run github.com/zricethezav/gitleaks/v8@v8.24.3 git --redact --exit-code 1
+          python3 scripts/check-release.py
+      - name: Container build and deployed full lifecycle
+        run: |
+          sh scripts/dev-setup.sh
+          docker compose up --build -d
+          python3 scripts/smoke.py
+      - name: Shut down development deployment
+        if: always()
+        run: docker compose down -v || true

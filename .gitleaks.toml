@@ -1,0 +1,6 @@
+title = "SecondFactor secret scanning"
+[extend]
+useDefault = true
+[allowlist]
+description = "Public deterministic NONPRODUCTION signing fixture; never deploy these keys"
+paths = ['''(^|/)testdata/assertion_vectors\.json$''']

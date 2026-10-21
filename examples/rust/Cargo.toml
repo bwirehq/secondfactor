@@ -1,0 +1,10 @@
+[package]
+name = "secondfactor-rust-example"
+version = "0.1.0"
+edition = "2021"
+publish = false
+[dependencies]
+secondfactor-client = { path = "../../sdk/rust" }
+axum = "0.8"
+tokio = { version = "1", features = ["macros", "rt-multi-thread", "net"] }
+base64 = "0.22"

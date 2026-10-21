@@ -1,0 +1,21 @@
+[package]
+name = "secondfactor-client"
+version = "0.1.0"
+edition = "2021"
+license = "MIT"
+description = "Backend-only typed HTTP client for SecondFactor (source distribution)"
+publish = false
+
+[dependencies]
+base64 = "0.22"
+ed25519-dalek = "2"
+rand = "0.8"
+reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+sha2 = "0.10"
+thiserror = "2"
+url = "2"
+
+[dev-dependencies]
+tokio = { version = "1", features = ["macros", "rt-multi-thread"] }

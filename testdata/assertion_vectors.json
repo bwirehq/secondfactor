@@ -1,0 +1,89 @@
+{
+  "invalid_cases": [
+    "wrong audience",
+    "wrong method",
+    "wrong path",
+    "body mismatch",
+    "idempotency mismatch",
+    "replayed jti",
+    "unknown kid",
+    "wrong algorithm",
+    "expired assertion",
+    "duplicate claims"
+  ],
+  "valid": [
+    {
+      "assertion": "eyJhbGciOiJFZERTQSIsInR5cCI6InNmLWFzc2VydGlvbitqd3QiLCJraWQiOiJ0ZXN0In0.eyJpZGgiOiI0N0RFUXBqOEhCU2EtX1RJbVctNUpDZXVRZVJrbTVOTXBKV1pHM2hTdUZVIiwidmVyIjoxLCJpc3MiOiJ0ZXN0IiwiYXVkIjoic2Vjb25kZmFjdG9yLXRlc3QiLCJzdWIiOiJmaXh0dXJlLXVzZXIiLCJzaWQiOiJmaXh0dXJlLXNlc3Npb24iLCJpYXQiOjE3MDAwMDAwMDAsImV4cCI6MTcwMDAwMDA2MCwianRpIjoiZml4dHVyZS1yZXF1ZXN0IiwiaHRtIjoiR0VUIiwiaHR1IjoiL3YxL2ZhY3RvcnMvc3RhdHVzIiwiYnNoIjoiNDdERVFwajhIQlNhLV9USW1XLTVKQ2V1UWVSa201Tk1wSldaRzNoU3VGVSIsInNyYyI6ImZpeHR1cmUtc291cmNlIn0.abyM8AA4LeHTg8B7cD5qIP_kCk-gE0ccSQf7BWSUuFSjvMmJvvAxbidxQBoCym79cD3s6iuABiRUzhaE51XDDg",
+      "body_base64": "",
+      "claims": {
+        "idh": "47DEQpj8HBSa-_TImW-5JCeuQeRkm5NMpJWZG3hSuFU",
+        "ver": 1,
+        "iss": "test",
+        "aud": "secondfactor-test",
+        "sub": "fixture-user",
+        "sid": "fixture-session",
+        "iat": 1700000000,
+        "exp": 1700000060,
+        "jti": "fixture-request",
+        "htm": "GET",
+        "htu": "/v1/factors/status",
+        "bsh": "47DEQpj8HBSa-_TImW-5JCeuQeRkm5NMpJWZG3hSuFU",
+        "src": "fixture-source"
+      },
+      "idempotency_key": "",
+      "key_id": "test",
+      "name": "empty GET",
+      "seed_hex": "0707070707070707070707070707070707070707070707070707070707070707",
+      "signing_input": "eyJhbGciOiJFZERTQSIsInR5cCI6InNmLWFzc2VydGlvbitqd3QiLCJraWQiOiJ0ZXN0In0.eyJpZGgiOiI0N0RFUXBqOEhCU2EtX1RJbVctNUpDZXVRZVJrbTVOTXBKV1pHM2hTdUZVIiwidmVyIjoxLCJpc3MiOiJ0ZXN0IiwiYXVkIjoic2Vjb25kZmFjdG9yLXRlc3QiLCJzdWIiOiJmaXh0dXJlLXVzZXIiLCJzaWQiOiJmaXh0dXJlLXNlc3Npb24iLCJpYXQiOjE3MDAwMDAwMDAsImV4cCI6MTcwMDAwMDA2MCwianRpIjoiZml4dHVyZS1yZXF1ZXN0IiwiaHRtIjoiR0VUIiwiaHR1IjoiL3YxL2ZhY3RvcnMvc3RhdHVzIiwiYnNoIjoiNDdERVFwajhIQlNhLV9USW1XLTVKQ2V1UWVSa201Tk1wSldaRzNoU3VGVSIsInNyYyI6ImZpeHR1cmUtc291cmNlIn0"
+    },
+    {
+      "assertion": "eyJhbGciOiJFZERTQSIsInR5cCI6InNmLWFzc2VydGlvbitqd3QiLCJraWQiOiJ0ZXN0In0.eyJpZGgiOiJMVzJwbHRtRHJBN2lyMzJTMnJaaWZ6OHl1YXk2aUdFX2ZoWFczTUpTRVFVIiwidmVyIjoxLCJpc3MiOiJ0ZXN0IiwiYXVkIjoic2Vjb25kZmFjdG9yLXRlc3QiLCJzdWIiOiJmaXh0dXJlLXVzZXIiLCJzaWQiOiJmaXh0dXJlLXNlc3Npb24iLCJpYXQiOjE3MDAwMDAwMDAsImV4cCI6MTcwMDAwMDA2MCwianRpIjoiZml4dHVyZS1yZXF1ZXN0IiwiaHRtIjoiUE9TVCIsImh0dSI6Ii92MS9lbnJvbGxtZW50cyIsImJzaCI6InJ1Z2djRy1fQUM3blF0ZWVsWXU4eXpqcHBJQTBCZm1BRlRsaW5EbkdpUU0iLCJzcmMiOiJmaXh0dXJlLXNvdXJjZSJ9.Yh1ZDbgLcP43UoUhXZlrxtJI2-7iocKdHqp_pDDiCcXIX50d53CL7ObVJXgzubGf2QM_KEqMeyCP7q22PpZ8Ag",
+      "body_base64": "eyJhY2NvdW50X25hbWUiOiJ1c2VyQGV4YW1wbGUuaW52YWxpZCJ9",
+      "claims": {
+        "idh": "LW2pltmDrA7ir32S2rZifz8yuay6iGE_fhXW3MJSEQU",
+        "ver": 1,
+        "iss": "test",
+        "aud": "secondfactor-test",
+        "sub": "fixture-user",
+        "sid": "fixture-session",
+        "iat": 1700000000,
+        "exp": 1700000060,
+        "jti": "fixture-request",
+        "htm": "POST",
+        "htu": "/v1/enrollments",
+        "bsh": "ruggcG-_AC7nQteelYu8yzjppIA0BfmAFTlinDnGiQM",
+        "src": "fixture-source"
+      },
+      "idempotency_key": "example-idempotency-key",
+      "key_id": "test",
+      "name": "JSON POST",
+      "seed_hex": "0707070707070707070707070707070707070707070707070707070707070707",
+      "signing_input": "eyJhbGciOiJFZERTQSIsInR5cCI6InNmLWFzc2VydGlvbitqd3QiLCJraWQiOiJ0ZXN0In0.eyJpZGgiOiJMVzJwbHRtRHJBN2lyMzJTMnJaaWZ6OHl1YXk2aUdFX2ZoWFczTUpTRVFVIiwidmVyIjoxLCJpc3MiOiJ0ZXN0IiwiYXVkIjoic2Vjb25kZmFjdG9yLXRlc3QiLCJzdWIiOiJmaXh0dXJlLXVzZXIiLCJzaWQiOiJmaXh0dXJlLXNlc3Npb24iLCJpYXQiOjE3MDAwMDAwMDAsImV4cCI6MTcwMDAwMDA2MCwianRpIjoiZml4dHVyZS1yZXF1ZXN0IiwiaHRtIjoiUE9TVCIsImh0dSI6Ii92MS9lbnJvbGxtZW50cyIsImJzaCI6InJ1Z2djRy1fQUM3blF0ZWVsWXU4eXpqcHBJQTBCZm1BRlRsaW5EbkdpUU0iLCJzcmMiOiJmaXh0dXJlLXNvdXJjZSJ9"
+    },
+    {
+      "assertion": "eyJhbGciOiJFZERTQSIsInR5cCI6InNmLWFzc2VydGlvbitqd3QiLCJraWQiOiJ0ZXN0In0.eyJpZGgiOiJyOW85VkpEV0NfbnpJNnJSNXNKNTZBSk92d1ZOR3BxS09ZRVRreDJKUWhvIiwidmVyIjoxLCJpc3MiOiJ0ZXN0IiwiYXVkIjoic2Vjb25kZmFjdG9yLXRlc3QiLCJzdWIiOiJmaXh0dXJlLXVzZXIiLCJzaWQiOiJmaXh0dXJlLXNlc3Npb24iLCJpYXQiOjE3MDAwMDAwMDAsImV4cCI6MTcwMDAwMDA2MCwianRpIjoiZml4dHVyZS1yZXF1ZXN0IiwiaHRtIjoiUE9TVCIsImh0dSI6Ii92MS9lbnJvbGxtZW50cyIsImJzaCI6InhUaHNONk0yTDNZZW1DTVZZUmo2VzNaMkN5SWt1ekZ0NDBKdVhVaGVKVkEiLCJzcmMiOiJmaXh0dXJlLXNvdXJjZSJ9.UCAq2BudpuOaO2D2Ccd1Rh78jRSTPUhdmzOVgMmnLQbwZetb86b5VeJvUSM1DKMkiIyEnObdx8yvMOFc-xmoAQ",
+      "body_base64": "eyJhY2NvdW50X25hbWUiOiJab8OrIn0=",
+      "claims": {
+        "idh": "r9o9VJDWC_nzI6rR5sJ56AJOvwVNGpqKOYETkx2JQho",
+        "ver": 1,
+        "iss": "test",
+        "aud": "secondfactor-test",
+        "sub": "fixture-user",
+        "sid": "fixture-session",
+        "iat": 1700000000,
+        "exp": 1700000060,
+        "jti": "fixture-request",
+        "htm": "POST",
+        "htu": "/v1/enrollments",
+        "bsh": "xThsN6M2L3YemCMVYRj6W3Z2CyIkuzFt40JuXUheJVA",
+        "src": "fixture-source"
+      },
+      "idempotency_key": "unicode-idempotency-key",
+      "key_id": "test",
+      "name": "unicode raw JSON",
+      "seed_hex": "0707070707070707070707070707070707070707070707070707070707070707",
+      "signing_input": "eyJhbGciOiJFZERTQSIsInR5cCI6InNmLWFzc2VydGlvbitqd3QiLCJraWQiOiJ0ZXN0In0.eyJpZGgiOiJyOW85VkpEV0NfbnpJNnJSNXNKNTZBSk92d1ZOR3BxS09ZRVRreDJKUWhvIiwidmVyIjoxLCJpc3MiOiJ0ZXN0IiwiYXVkIjoic2Vjb25kZmFjdG9yLXRlc3QiLCJzdWIiOiJmaXh0dXJlLXVzZXIiLCJzaWQiOiJmaXh0dXJlLXNlc3Npb24iLCJpYXQiOjE3MDAwMDAwMDAsImV4cCI6MTcwMDAwMDA2MCwianRpIjoiZml4dHVyZS1yZXF1ZXN0IiwiaHRtIjoiUE9TVCIsImh0dSI6Ii92MS9lbnJvbGxtZW50cyIsImJzaCI6InhUaHNONk0yTDNZZW1DTVZZUmo2VzNaMkN5SWt1ekZ0NDBKdVhVaGVKVkEiLCJzcmMiOiJmaXh0dXJlLXNvdXJjZSJ9"
+    }
+  ],
+  "warning": "PUBLIC NONPRODUCTION TEST SEED; NEVER USE FOR REAL APPLICATIONS"
+}
