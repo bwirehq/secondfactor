@@ -653,7 +653,12 @@ func TestDatabaseEventSigningKeyIsolation(t *testing.T) {
 		Audience: "audience", Subject: "owner", Session: "owner-session", Source: "worker",
 		IssuedAt: now, ExpiresAt: now + 60, Method: "POST",
 		Path: "/v1/events/claim", BodyHash: BodyHash([]byte("{}"))}
-	for _, tc := range []struct {name string; seed byte; path string; authorized bool}{
+	for _, tc := range []struct {
+		name       string
+		seed       byte
+		path       string
+		authorized bool
+	}{
 		{"user-key-to-events", 7, "/v1/events/claim", false},
 		{"worker-key-to-events", 8, "/v1/events/claim", true},
 		{"worker-key-to-user-endpoint", 8, "/v1/factors/status", false},
@@ -662,12 +667,16 @@ func TestDatabaseEventSigningKeyIsolation(t *testing.T) {
 			c := claims
 			c.Path = tc.path
 			c.ID = tc.name
-			a, e := SignAssertion(ed25519.NewKeyFromSeed(bytes.Repeat([]byte{tc.seed}, 32)), map[byte]string{7:"test",8:"worker"}[tc.seed], c)
-			if e != nil { t.Fatal(e) }
+			a, e := SignAssertion(ed25519.NewKeyFromSeed(bytes.Repeat([]byte{tc.seed}, 32)), map[byte]string{7: "test", 8: "worker"}[tc.seed], c)
+			if e != nil {
+				t.Fatal(e)
+			}
 			req := httptest.NewRequest("POST", c.Path, strings.NewReader("{}"))
 			req.Header.Set("Authorization", "Bearer "+a)
 			_, e = f.s.AuthenticateRequest(f.ctx, req, []byte("{}"), "audience")
-			if (e == nil) != tc.authorized { t.Fatalf("authorized=%v error=%v", tc.authorized, e) }
+			if (e == nil) != tc.authorized {
+				t.Fatalf("authorized=%v error=%v", tc.authorized, e)
+			}
 		})
 	}
 }
