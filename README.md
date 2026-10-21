@@ -59,6 +59,8 @@ This generates disposable development keys and starts PostgreSQL, the MFA API an
 go get github.com/bwirehq/secondfactor@v0.1.0
 ```
 
+> **Release note:** `v0.1.0` is the published baseline. The security hardening in this pull request is **unreleased** and is not included in that tag. After review and merge, publish a new immutable patch release (for example `v0.1.1`) before recommending these new protections to version-pinned consumers.
+
 **The TypeScript and Rust clients are not published to npm or crates.io.** Do not install an unrelated package with a similar name. Keep application signing seeds on trusted backends, never in browsers.
 
 ## 🧭 How it works
