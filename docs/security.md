@@ -19,3 +19,8 @@ Use separate database roles, protected configuration/key files, current runtime/
 Session checks are point-in-time: the application remains responsible for its own authorization and for immediately enforcing primary-session revocation on its protected routes. Do not cache successful MFA/session decisions or treat MFA as a substitute for primary authentication.
 
 See `SECURITY.md` for reporting and `docs/releasing.md` for review gates. Initial source-review findings and runtime tests do not establish an independent certification.
+
+
+## Privileged worker isolation
+
+User-context application signing keys cannot access the tenant-wide outbox endpoints `/v1/events/claim` and `/v1/events/ack`; these require a separately configured worker key. Signed application callbacks are protected against duplicate request IDs by a required atomic replay guard. Use `PostgresReplayGuard` for production or another durable cross-replica implementation; `MemoryReplayGuard` is only for local development. See [callback security](callback-replay.md).
