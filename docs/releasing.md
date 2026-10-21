@@ -14,3 +14,8 @@ Do not create `v0.1.0` until every mandatory gate passes on the exact candidate 
 GitHub Actions is the pre-tag verification runner even if local Rust or Docker tooling is unavailable. Never publish first and use CI to discover whether the release builds. Never move or overwrite a public release tag. If verification fails after publication, disclose the limitation and correct it through a new version.
 
 The TypeScript/Rust manifests intentionally disable registry publication until ownership, naming, credentials, and package verification are separately established. Do not advertise npm/crates.io availability.
+
+
+## Repository protection
+
+Require successful branch CI and review through GitHub branch rules. Restrict force pushes and protect public version tags from deletion or retargeting. Prefer signed tags and verifiable release provenance. Repository administrators must configure these settings; successful CI by itself cannot enforce them.
