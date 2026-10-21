@@ -1,23 +1,40 @@
-# SecondFactor
+<div align="center">
 
-*Self-hostable multi-factor authentication for modern applications.*
+# 🛡️ SecondFactor
+### Self-hosted multi-factor authentication for modern backends
 
-A Go-powered MFA library and service providing authenticator verification, recovery codes, session-bound proofs, and secure factor management through a language-independent API.
+**A Go-powered MFA engine and PostgreSQL-backed API. Use it from Go, NestJS, Rust, or any backend that speaks HTTP.**
 
-SecondFactor adds an authentication step to your existing login system. It does not register users, replace your identity provider, or decide your application's authorization policies.
+[![CI](https://github.com/bwirehq/secondfactor/actions/workflows/ci.yml/badge.svg)](https://github.com/bwirehq/secondfactor/actions/workflows/ci.yml)
+[![Release](https://img.shields.io/github/v/release/bwirehq/secondfactor)](https://github.com/bwirehq/secondfactor/releases)
+[![Go Reference](https://pkg.go.dev/badge/github.com/bwirehq/secondfactor.svg)](https://pkg.go.dev/github.com/bwirehq/secondfactor)
+[![MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
-## Integration options
+[Quickstart](docs/quickstart.md) · [Integrations](docs/integrations.md) · [API](docs/api.md) · [Security](docs/security.md) · [Report a vulnerability](SECURITY.md)
 
-| Application | Integration |
+</div>
+
+---
+
+**SecondFactor adds MFA to your existing login system.** Your app still owns primary authentication, sessions and authorization. SecondFactor provides TOTP enrollment, verification, recovery, proofs and factor management. Embed the Go module or deploy a dedicated HTTPS service.
+
+## ✨ Features
+
+| | Capability |
 |---|---|
-| Go | Embedded library or signed HTTP client |
-| Node.js / TypeScript / NestJS | Backend TypeScript HTTP client |
-| Rust | Backend Rust HTTP client |
-| Python and other languages | Versioned JSON API and OpenAPI 3 |
+| 🔐 | Authenticator TOTP: six digits, 30-second steps and clock tolerance |
+| 🗝️ | Ten one-time, high-entropy recovery codes stored only as hashes |
+| 🔄 | Atomic replay prevention with PostgreSQL transactions and row locking |
+| ⏱️ | Session-bound access and fresh-action proofs with expiry and factor-version checks |
+| 🛡️ | Assisted recovery with independent authorization and confirmed session revocation |
+| 🔒 | AES-GCM secret encryption, key rotation and database-backed rate limits |
+| 🧩 | A native Go library, signed HTTP API, and backend-only TypeScript/Rust clients |
 
-The first release supports authenticator-app TOTP and one-time recovery codes. TOTP is **not phishing-resistant**. Passkeys, SMS, email OTP, billing, and hosted dashboards are outside v0.1.0.
+**Not an identity provider.** SecondFactor does not register users, replace login, decide account recovery permissions, or send notification emails. **TOTP is not phishing-resistant.** Passkeys are not included in v0.1.0.
 
-## Quick start
+## 🚀 Try the HTTPS demo
+
+Requires Go 1.26.10+, Docker Compose, OpenSSL and Python 3.
 
 ```sh
 git clone https://github.com/bwirehq/secondfactor.git
@@ -27,37 +44,54 @@ docker compose up --build -d
 python3 scripts/smoke.py
 ```
 
-This creates ignored development keys and a short-lived self-signed certificate. It runs PostgreSQL, the MFA API, and an HTTPS mock-primary-auth application. The smoke test covers login through enrollment, confirmation, verification, a protected route, recovery-code regeneration, and logout. It waits for the next TOTP period because codes cannot be replayed.
+This generates disposable development keys and starts PostgreSQL, the MFA API and an HTTPS mock-login application. The smoke test covers enrollment, confirmation, verification, a protected route, recovery-code regeneration and logout. **Do not use the mock identity system in production.** See the [quickstart](docs/quickstart.md) for manual authenticator setup.
 
-Read [the complete quickstart](docs/quickstart.md), including manual authenticator setup and production differences.
+## 📦 Integration options
 
-## Go installation
-
-After the verified v0.1.0 release is published:
+| Backend | Integration | Distribution |
+|---|---|---|
+| **Go** | Embedded module or signed HTTP client | Published Go module |
+| **TypeScript / NestJS** | Backend-only signed SDK | Source in `sdk/typescript` |
+| **Rust** | Backend-only signed SDK | Source in `sdk/rust` |
+| **Python / other** | Signed JSON API and OpenAPI | Protocol documentation |
 
 ```sh
 go get github.com/bwirehq/secondfactor@v0.1.0
 ```
 
-For untagged candidates, use the exact verified Git commit instead. See [embedded integration](docs/integrations.md). The service and Go client are separate packages within the same module.
+**The TypeScript and Rust clients are not published to npm or crates.io.** Do not install an unrelated package with a similar name. Keep application signing seeds on trusted backends, never in browsers.
 
-The TypeScript and Rust SDKs are **source distributions, not published npm/crates.io packages**. Build/install them from `sdk/typescript` and `sdk/rust`; see their integration instructions. Never put application signing seeds in browser JavaScript.
+## 🧭 How it works
 
-## Security model
+```mermaid
+flowchart LR
+    Browser --> App["Your application backend<br/>Primary auth + sessions"]
+    App -->|"Ed25519-signed HTTPS"| Service["SecondFactor API"]
+    Service --> Core["Go MFA engine"]
+    Core --> Postgres[("PostgreSQL")]
+    Service -->|"Signed session/recovery callbacks"| App
+    Worker["Privileged event worker"] -->|"Separate signing key"| Service
+```
 
-Registered backends sign short-lived, request-bound Ed25519 assertions. Tenant identity comes from the verified signer. Current primary sessions are checked through authenticated application callbacks; application credentials alone do not prove a user's session is active. The embedded API requires trusted middleware inputs.
+The standalone service verifies active primary sessions through authenticated application callbacks. Privileged outbox delivery uses **separate worker keys**, and production callback receivers must implement durable, atomic replay protection. See [callback and worker security](docs/callback-replay.md).
 
-Secrets use authenticated encryption, proofs and recovery codes are hashed, and PostgreSQL transactions serialize security transitions. Assisted recovery blocks normal MFA until session revocation is confirmed and the owner authenticates again and replaces their factor.
+## 📚 Documentation
 
-Deployment requires explicit issuer/key configuration, PostgreSQL, and authoritative session and recovery integrations. Use HTTPS, least-privilege database access, protected key files, and backups. Positive session decisions are not cached. There is no claim of certification or a guarantee of security. Read [security](docs/security.md), [recovery](docs/recovery.md), and [configuration](docs/configuration.md).
+| Guide | Contents |
+|---|---|
+| [Quickstart](docs/quickstart.md) | Local setup and protected route |
+| [Architecture](docs/architecture.md) | Core/service separation and trust model |
+| [Integrations](docs/integrations.md) | Go, NestJS, Rust, language-neutral HTTP |
+| [API](docs/api.md) and [OpenAPI](docs/openapi.yaml) | Endpoints, schemas and errors |
+| [Configuration](docs/configuration.md) | Signing keys, issuers, TLS and limits |
+| [Recovery](docs/recovery.md) | Recovery grants, session generations and revocation |
+| [Security](docs/security.md) | Cryptographic and deployment assumptions |
+| [Key rotation](docs/key-rotation.md) | Safe re-encryption |
+| [Coding agents](docs/for-coding-agents.md) | Trusted integration requirements |
+| [Troubleshooting](docs/troubleshooting.md) | Common setup problems |
 
-## Documentation
+## ✅ Quality and contributions
 
-- [Architecture](docs/architecture.md) and [API reference](docs/api.md)
-- [OpenAPI](docs/openapi.yaml) and [assertion protocol](docs/assertions.md)
-- [Configuration](docs/configuration.md), [key rotation](docs/key-rotation.md), [troubleshooting](docs/troubleshooting.md)
-- [Go, NestJS, Rust, and HTTP integrations](docs/integrations.md)
-- [Coding-agent integration guide](docs/for-coding-agents.md)
-- [Contributing](CONTRIBUTING.md), [security reporting](SECURITY.md), and [release gates](docs/releasing.md)
+[CI](.github/workflows/ci.yml) checks Go unit/PostgreSQL integration and concurrent replay tests, race detection, vet, vulnerability scans, TypeScript/Rust builds and tests, audits, secret scanning and a deployed HTTPS smoke test. CI passing does **not** replace independent review of security-critical infrastructure.
 
-Licensed under [MIT](LICENSE).
+Contributions: [CONTRIBUTING.md](CONTRIBUTING.md). Vulnerabilities: [private reporting policy](SECURITY.md). License: [MIT](LICENSE).
