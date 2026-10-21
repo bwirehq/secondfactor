@@ -156,6 +156,17 @@ impl Client {
         kid: &str,
         seed: [u8; 32],
     ) -> Result<Self, Error> {
+        Self::new_with_ca(base, audience, application, kid, seed, None)
+    }
+    /// Optionally trust a private CA without disabling normal TLS verification.
+    pub fn new_with_ca(
+        base: &str,
+        audience: &str,
+        application: &str,
+        kid: &str,
+        seed: [u8; 32],
+        ca_pem: Option<&[u8]>,
+    ) -> Result<Self, Error> {
         let u = url::Url::parse(base).map_err(|_| Error::InvalidInput)?;
         if !u.username().is_empty()
             || u.password().is_some()
@@ -171,11 +182,15 @@ impl Client {
         {
             return Err(Error::InvalidInput);
         };
-        let http = reqwest::Client::builder()
+        let mut builder = reqwest::Client::builder()
             .redirect(reqwest::redirect::Policy::none())
-            .timeout(Duration::from_secs(10))
-            .build()
-            .map_err(|_| Error::Transport)?;
+            .timeout(Duration::from_secs(10));
+        if let Some(pem) = ca_pem {
+            builder = builder.add_root_certificate(
+                reqwest::Certificate::from_pem(pem).map_err(|_| Error::InvalidInput)?,
+            )
+        }
+        let http = builder.build().map_err(|_| Error::Transport)?;
         Ok(Self {
             base: base.trim_end_matches('/').into(),
             audience: audience.into(),
@@ -295,6 +310,16 @@ impl Client {
             i,
             "POST",
             "/v1/verifications/totp",
+            Some(&serde_json::json!({"code":code})),
+            None,
+        )
+        .await
+    }
+    pub async fn verify_sensitive(&self, i: &Identity, code: &str) -> Result<Verification, Error> {
+        self.request(
+            i,
+            "POST",
+            "/v1/verifications/sensitive",
             Some(&serde_json::json!({"code":code})),
             None,
         )

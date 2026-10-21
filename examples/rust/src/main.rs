@@ -33,12 +33,17 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let raw = std::fs::read_to_string(file)?;
     let b = base64::engine::general_purpose::STANDARD.decode(raw.trim())?;
     let seed: [u8; 32] = b.try_into().map_err(|_| "seed must contain 32 bytes")?;
-    let c = Arc::new(Client::new(
+    let ca = std::env::var("SECONDFACTOR_CA_FILE")
+        .ok()
+        .map(std::fs::read)
+        .transpose()?;
+    let c = Arc::new(Client::new_with_ca(
         &std::env::var("SECONDFACTOR_URL").unwrap_or("https://localhost:8443".into()),
         "secondfactor-local",
         "demo",
         "app1",
         seed,
+        ca.as_deref(),
     )?);
     let app = Router::new()
         .route("/protected", get(protected))

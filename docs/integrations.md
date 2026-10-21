@@ -36,7 +36,7 @@ The SDK is not published to crates.io. Use a reviewed path or Git revision depen
 secondfactor-client = { path = "../secondfactor/sdk/rust" }
 ```
 
-Run `cargo test --manifest-path sdk/rust/Cargo.toml --locked` and `cargo run --manifest-path examples/rust/Cargo.toml`. Configure `SECONDFACTOR_SEED_FILE` and service URL in the example. Supply real primary-authentication middleware that inserts `TrustedSession`. The example refuses protected access without it. Production service certificates should chain to the client's configured public trust roots.
+Run `cargo test --manifest-path sdk/rust/Cargo.toml --locked` and `cargo run --manifest-path examples/rust/Cargo.toml`. Configure `SECONDFACTOR_SEED_FILE` and service URL in the example. Supply real primary-authentication middleware that inserts `TrustedSession`. The example refuses protected access without it. Set `SECONDFACTOR_CA_FILE` to the development certificate for a local service. The Rust client also supports explicit private CA trust through `new_with_ca`; normal TLS verification remains enabled.
 
 ## Other languages
 

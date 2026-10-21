@@ -105,6 +105,11 @@ func (c *Client) VerifyTOTP(ctx context.Context, in sf.Mutation) (sf.Verificatio
 	e := c.Do(ctx, in.Identity, "POST", "/v1/verifications/totp", map[string]any{"code": in.Code}, "", &v)
 	return v, e
 }
+func (c *Client) VerifySensitive(ctx context.Context, in sf.Mutation) (sf.Verification, error) {
+	var v sf.Verification
+	e := c.Do(ctx, in.Identity, "POST", "/v1/verifications/sensitive", map[string]any{"code": in.Code}, "", &v)
+	return v, e
+}
 func (c *Client) VerifyRecoveryCode(ctx context.Context, in sf.Mutation) (sf.Proof, error) {
 	var v sf.Proof
 	e := c.Do(ctx, in.Identity, "POST", "/v1/verifications/recovery-code", map[string]any{"code": in.Code}, "", &v)
